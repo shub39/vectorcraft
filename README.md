@@ -1,32 +1,22 @@
-# Astro Starter Kit: Basics
+# SVG to XML Vector Drawable Converter
 
-```sh
-npm create astro@latest -- --template basics
-```
+This is a web application that allows you to convert SVG code to Android's XML Vector Drawable format. It provides customization options for color and size, a live preview of the icon, and a "Copy to Clipboard" button for the generated XML.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## ✨ Features
 
-## 🚀 Project Structure
+- **SVG to XML Conversion:** Converts SVG code to Android's XML Vector Drawable format.
+- **Customization:** Allows you to change the color and size of the icon.
+- **Live Preview:** Shows a live preview of the icon as you make changes.
+- **Copy to Clipboard:** Lets you copy the generated XML with a single click.
+- **Material 3 Design:** Features a modern and clean design based on Material 3.
+- **Light and Dark Themes:** Supports both light and dark themes to match your system preferences.
 
-Inside of your Astro project, you'll see the following folders and files:
+## 🚀 Getting Started
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+1.  **Paste SVG Code:** Paste your SVG code into the input field.
+2.  **Customize:** Use the color picker and size inputs to customize the icon.
+3.  **Preview:** See a live preview of the icon.
+4.  **Copy XML:** Copy the generated XML code to your clipboard.
 
 ## 🧞 Commands
 
@@ -38,9 +28,4 @@ All commands are run from the root of the project, from a terminal:
 | `npm run dev`             | Starts local dev server at `localhost:4321`      |
 | `npm run build`           | Build your production site to `./dist/`          |
 | `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
 
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).

@@ -1,11 +1,208 @@
----
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+---
+import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
-	<Welcome />
+  <main>
+    <div class="container">
+      <div class="column">
+        <h1>SVG to XML</h1>
+        <div class="input-group">
+          <label for="svg-input">SVG Code</label>
+          <textarea id="svg-input" rows="10" placeholder="Paste your SVG code here..."></textarea>
+        </div>
+        <div class="customization-group">
+            <div class="input-group">
+                <label for="color-input">Color</label>
+                <input type="color" id="color-input" value="#000000">
+            </div>
+            <div class="input-group">
+                <label for="width-input">Width</label>
+                <input type="number" id="width-input" value="24"><span>dp</span>
+            </div>
+            <div class="input-group">
+                <label for="height-input">Height</label>
+                <input type="number" id="height-input" value="24"><span>dp</span>
+            </div>
+        </div>
+      </div>
+      <div class="column">
+        <div class="preview-group">
+            <h2>Preview</h2>
+            <div id="preview"></div>
+        </div>
+        <div class="output-group">
+            <h2>XML Output</h2>
+            <textarea id="xml-output" readonly placeholder="XML output will appear here..."></textarea>
+            <button id="copy-button">Copy to Clipboard</button>
+        </div>
+      </div>
+    </div>
+  </main>
 </Layout>
+
+<script>
+    const svgInput = document.getElementById('svg-input');
+    const colorInput = document.getElementById('color-input');
+    const widthInput = document.getElementById('width-input');
+    const heightInput = document.getElementById('height-input');
+    const preview = document.getElementById('preview');
+    const xmlOutput = document.getElementById('xml-output');
+    const copyButton = document.getElementById('copy-button');
+
+    function convertSvgToXml() {
+        const svgCode = svgInput.value;
+        if (!svgCode) {
+            preview.innerHTML = '';
+            xmlOutput.value = '';
+            return;
+        }
+
+        try {
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgCode, 'image/svg+xml');
+            const svgElement = svgDoc.querySelector('svg');
+            const pathElement = svgDoc.querySelector('path');
+            if (!svgElement || !pathElement) {
+                preview.innerHTML = '<p>Invalid SVG</p>';
+                xmlOutput.value = '';
+                return;
+            }
+
+            const pathData = pathElement.getAttribute('d');
+            const fillColor = colorInput.value;
+            const width = widthInput.value;
+            const height = heightInput.value;
+            const viewBox = svgElement.getAttribute('viewBox') || `0 0 ${width} ${height}`;
+            const [, , viewBoxWidth, viewBoxHeight] = viewBox.split(' ');
+
+            const xml = `
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="${width}dp"
+    android:height="${height}dp"
+    android:viewportWidth="${viewBoxWidth || width}"
+    android:viewportHeight="${viewBoxHeight || height}">
+  <path
+      android:fillColor="${fillColor}"
+      android:pathData="${pathData}"/>
+</vector>
+            `;
+
+            xmlOutput.value = xml.trim();
+            updatePreview(svgCode, fillColor, width, height);
+        } catch (error) {
+            preview.innerHTML = '<p>Error parsing SVG</p>';
+            xmlOutput.value = '';
+        }
+    }
+
+    function updatePreview(svgCode, color, width, height) {
+        const newSvgCode = svgCode.replace(/<svg(.*?)>/, `<svg$1 width="${width}" height="${height}">`)
+                                .replace(/fill=".*?"/, `fill="${color}"`);
+        preview.innerHTML = newSvgCode;
+    }
+
+    svgInput.addEventListener('input', convertSvgToXml);
+    colorInput.addEventListener('input', convertSvgToXml);
+    widthInput.addEventListener('input', convertSvgToXml);
+    heightInput.addEventListener('input', convertSvgToXml);
+
+    copyButton.addEventListener('click', () => {
+        xmlOutput.select();
+        document.execCommand('copy');
+    });
+
+    // Initial conversion
+    convertSvgToXml();
+</script>
+
+<style>
+  main {
+    padding: 2rem;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .input-group, .customization-group, .preview-group, .output-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .customization-group{
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  textarea {
+    border-radius: 8px;
+    border: 1px solid var(--light-surface-variant);
+    padding: 0.5rem;
+    background-color: var(--light-surface);
+    color: var(--light-on-surface);
+    resize: vertical;
+  }
+
+  input[type="color"], input[type="number"] {
+    border-radius: 8px;
+    border: 1px solid var(--light-surface-variant);
+    padding: 0.5rem;
+    background-color: var(--light-surface);
+    color: var(--light-on-surface);
+  }
+  
+  input[type="number"]{
+    width: 50px;
+  }
+
+  button {
+    border-radius: 20px;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--light-primary);
+    color: var(--light-on-primary);
+    cursor: pointer;
+  }
+
+  #preview {
+    border: 1px dashed var(--light-surface-variant);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+  }
+
+  #xml-output {
+    min-height: 200px;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    textarea, input[type="color"], input[type="number"] {
+        background-color: var(--dark-surface);
+        color: var(--dark-on-surface);
+        border-color: var(--dark-surface-variant);
+    }
+
+    button {
+        background-color: var(--dark-primary);
+        color: var(--dark-on-primary);
+    }
+
+    #preview {
+        border-color: var(--dark-surface-variant);
+    }
+  }
+</style>
