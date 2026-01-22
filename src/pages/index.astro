@@ -63,29 +63,64 @@ import Layout from '../layouts/Layout.astro';
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgCode, 'image/svg+xml');
             const svgElement = svgDoc.querySelector('svg');
-            const pathElement = svgDoc.querySelector('path');
-            if (!svgElement || !pathElement) {
+
+            if (!svgElement) {
                 preview.innerHTML = '<p>Invalid SVG</p>';
                 xmlOutput.value = '';
                 return;
             }
 
-            const pathData = pathElement.getAttribute('d');
-            const fillColor = colorInput.value;
             const width = widthInput.value;
             const height = heightInput.value;
+            const fillColor = colorInput.value;
+
             const viewBox = svgElement.getAttribute('viewBox') || `0 0 ${width} ${height}`;
             const [, , viewBoxWidth, viewBoxHeight] = viewBox.split(' ');
+
+            let paths = '';
+            
+            function processElement(element) {
+                const tagName = element.tagName.toLowerCase();
+                let pathData = '';
+                
+                switch(tagName) {
+                    case 'path':
+                        pathData = element.getAttribute('d');
+                        break;
+                    case 'rect':
+                        const x = parseFloat(element.getAttribute('x') || 0);
+                        const y = parseFloat(element.getAttribute('y') || 0);
+                        const w = parseFloat(element.getAttribute('width'));
+                        const h = parseFloat(element.getAttribute('height'));
+                        pathData = `M${x},${y}h${w}v${h}h-${w}z`;
+                        break;
+                    case 'circle':
+                        const cx = parseFloat(element.getAttribute('cx'));
+                        const cy = parseFloat(element.getAttribute('cy'));
+                        const r = parseFloat(element.getAttribute('r'));
+                        pathData = `M${cx-r},${cy}a${r},${r} 0 1,0 ${r*2},0a${r},${r} 0 1,0 -${r*2},0`;
+                        break;
+                    case 'g':
+                        element.childNodes.forEach(processElement);
+                        break;
+                }
+
+                if (pathData) {
+                    paths += `
+  <path
+      android:fillColor="${fillColor}"
+      android:pathData="${pathData}"/>`;
+                }
+            }
+
+            svgElement.childNodes.forEach(processElement);
 
             const xml = `
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="${width}dp"
     android:height="${height}dp"
     android:viewportWidth="${viewBoxWidth || width}"
-    android:viewportHeight="${viewBoxHeight || height}">
-  <path
-      android:fillColor="${fillColor}"
-      android:pathData="${pathData}"/>
+    android:viewportHeight="${viewBoxHeight || height}">${paths}
 </vector>
             `;
 
@@ -98,9 +133,18 @@ import Layout from '../layouts/Layout.astro';
     }
 
     function updatePreview(svgCode, color, width, height) {
-        const newSvgCode = svgCode.replace(/<svg(.*?)>/, `<svg$1 width="${width}" height="${height}">`)
-                                .replace(/fill=".*?"/, `fill="${color}"`);
-        preview.innerHTML = newSvgCode;
+        let newSvgCode = svgCode.replace(/<svg(.*?)>/, `<svg$1 width="${width}" height="${height}">`);
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(newSvgCode, 'image/svg+xml');
+        const svgElement = svgDoc.querySelector('svg');
+
+        svgElement.querySelectorAll('*').forEach(el => {
+            if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                el.setAttribute('fill', color);
+            }
+        });
+        
+        preview.innerHTML = svgElement.outerHTML;
     }
 
     svgInput.addEventListener('input', convertSvgToXml);
@@ -113,7 +157,6 @@ import Layout from '../layouts/Layout.astro';
         document.execCommand('copy');
     });
 
-    // Initial conversion
     convertSvgToXml();
 </script>
 

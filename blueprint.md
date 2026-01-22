@@ -1,34 +1,34 @@
-# SVG to XML Vector Drawable Converter
+# SVG to XML Converter Blueprint
 
 ## Purpose and Capabilities
 
-This web application provides a user-friendly interface for converting SVG code into Android's XML Vector Drawable format. It allows for customization of the icon's color and size, offers a real-time preview, and includes a "Copy to Clipboard" feature for the generated XML. The application is designed with Material 3 aesthetics, uses the Google Sans font, and supports both light and dark themes.
+This is a web-based tool that converts SVG (Scalable Vector Graphics) code into Android's Vector Drawable XML format. It allows users to paste their SVG code, customize properties like color, width, and height, and get the corresponding XML output for use in Android projects.
 
 ## Project Outline
 
-### Style and Design
+### Design and Features (Version 1.0)
 
-*   **Framework:** Astro.js
-*   **Design Language:** Material 3
-*   **Font:** Google Sans
-*   **Themes:** Light and Dark mode support.
-*   **Layout:** A single-page application with a two-column layout. The left column will contain the input fields for the SVG code and customization options, while the right column will display the icon preview and the generated XML output.
+*   **Layout:** A two-column layout.
+    *   The left column contains the input for the SVG code and customization options (color, width, height).
+    *   The right column displays a live preview of the SVG and the generated XML output.
+*   **Functionality:**
+    *   **SVG Input:** A textarea for users to paste SVG code.
+    *   **Customization:** Inputs for color, width, and height.
+    *   **Live Preview:** The preview updates as the user modifies the SVG or customization options.
+    *   **XML Output:** A read-only textarea displays the converted Vector Drawable XML.
+    *   **Copy to Clipboard:** A button to copy the XML output.
+*   **Styling:**
+    *   A clean, modern interface with light and dark mode support.
+    *   Uses CSS variables for theming.
 
-### Features
+### Current Task: Fix SVG to Vector Drawable Conversion
 
-*   **SVG Input:** A text area for users to paste their SVG code.
-*   **Color Customization:** A color picker to change the icon's fill color.
-*   **Size Customization:** Input fields to adjust the width and height of the icon.
-*   **Live Preview:** A real-time preview of the icon that updates as the user modifies the SVG code or customization options.
-*   **XML Output:** A read-only text area displaying the generated XML Vector Drawable code.
-*   **Copy to Clipboard:** A button to copy the generated XML to the clipboard.
-*   **Responsive Design:** The layout will adapt to different screen sizes.
+The current implementation has a critical flaw: it only processes the first `<path>` element found in the SVG. This causes issues with any SVG that uses multiple paths, groups (`<g>`), or other shapes (`<rect>`, `<circle>`, etc.), resulting in an incomplete or invisible icon in Android.
 
-## Current Task: Initial Setup
+**Plan:**
 
-*   **`blueprint.md`:** Create the blueprint file.
-*   **Cleanup:** Remove un-used files from the default astro project.
-*   **Layout:** Update the main layout with Google Sans font and theme colors.
-*   **Index Page:** Create the main page with the UI structure.
-*   **Functionality:** Add the client-side script for the conversion logic.
-*   **Styling:** Apply Material 3 styling to the UI elements.
+1.  **Enhance SVG Parsing:** Modify the `convertSvgToXml` function in `src/pages/index.astro`.
+2.  **Handle Multiple Elements:** The script will be updated to iterate through all elements within the SVG, not just the first path.
+3.  **Support for Groups:** Add recursive processing for `<g>` (group) elements to handle nested shapes.
+4.  **Convert Basic Shapes:** Implement conversion logic to transform basic SVG shapes (`<rect>`, `<circle>`, `<polygon>`, etc.) into the `<path>` data format that Android's Vector Drawable requires.
+5.  **Generate Correct XML:** Construct the final XML with multiple `<path>` tags, preserving the structure and appearance of the original SVG.
