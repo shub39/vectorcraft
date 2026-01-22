@@ -64,8 +64,8 @@ import Layout from '../layouts/Layout.astro';
             const svgDoc = parser.parseFromString(svgCode, 'image/svg+xml');
             const svgElement = svgDoc.querySelector('svg');
 
-            if (!svgElement) {
-                preview.innerHTML = '<p>Invalid SVG</p>';
+            if (!svgElement || svgDoc.querySelector('parsererror')) {
+                preview.innerHTML = '<p>Error parsing SVG</p>';
                 xmlOutput.value = '';
                 return;
             }
@@ -75,11 +75,17 @@ import Layout from '../layouts/Layout.astro';
             const fillColor = colorInput.value;
 
             const viewBox = svgElement.getAttribute('viewBox') || `0 0 ${width} ${height}`;
-            const [, , viewBoxWidth, viewBoxHeight] = viewBox.split(' ');
+            const viewBoxParts = viewBox.split(' ').map(parseFloat);
+            const viewBoxX = viewBoxParts[0] || 0;
+            const viewBoxY = viewBoxParts[1] || 0;
+            const viewBoxWidth = viewBoxParts[2] || width;
+            const viewBoxHeight = viewBoxParts[3] || height;
 
             let paths = '';
             
             function processElement(element) {
+                if (element.nodeType !== 1) return; // Process only element nodes
+
                 const tagName = element.tagName.toLowerCase();
                 let pathData = '';
                 
@@ -92,59 +98,86 @@ import Layout from '../layouts/Layout.astro';
                         const y = parseFloat(element.getAttribute('y') || 0);
                         const w = parseFloat(element.getAttribute('width'));
                         const h = parseFloat(element.getAttribute('height'));
-                        pathData = `M${x},${y}h${w}v${h}h-${w}z`;
+                        if (!isNaN(w) && !isNaN(h)) {
+                            pathData = `M${x},${y}h${w}v${h}h-${w}z`;
+                        }
                         break;
                     case 'circle':
                         const cx = parseFloat(element.getAttribute('cx'));
                         const cy = parseFloat(element.getAttribute('cy'));
                         const r = parseFloat(element.getAttribute('r'));
-                        pathData = `M${cx-r},${cy}a${r},${r} 0 1,0 ${r*2},0a${r},${r} 0 1,0 -${r*2},0`;
+                        if(!isNaN(cx) && !isNaN(cy) && !isNaN(r)){
+                            pathData = `M${cx-r},${cy}a${r},${r} 0 1,0 ${r*2},0a${r},${r} 0 1,0 -${r*2},0`;
+                        }
                         break;
                     case 'g':
-                        element.childNodes.forEach(processElement);
+                        for (const child of element.children) {
+                            processElement(child);
+                        }
                         break;
                 }
 
                 if (pathData) {
                     paths += `
-  <path
-      android:fillColor="${fillColor}"
-      android:pathData="${pathData}"/>`;
+    <path
+        android:fillColor="${fillColor}"
+        android:pathData="${pathData}"/>`;
                 }
             }
 
-            svgElement.childNodes.forEach(processElement);
+            for (const child of svgElement.children) {
+                processElement(child);
+            }
+
+            let content = paths;
+            if (viewBoxX !== 0 || viewBoxY !== 0) {
+                content = `
+<group
+    android:translateX="${-viewBoxX}"
+    android:translateY="${-viewBoxY}">${paths}
+</group>`;
+            }
 
             const xml = `
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="${width}dp"
     android:height="${height}dp"
-    android:viewportWidth="${viewBoxWidth || width}"
-    android:viewportHeight="${viewBoxHeight || height}">${paths}
+    android:viewportWidth="${viewBoxWidth}"
+    android:viewportHeight="${viewBoxHeight}">${content}
 </vector>
             `;
 
             xmlOutput.value = xml.trim();
             updatePreview(svgCode, fillColor, width, height);
         } catch (error) {
+            console.error(error);
             preview.innerHTML = '<p>Error parsing SVG</p>';
             xmlOutput.value = '';
         }
     }
 
     function updatePreview(svgCode, color, width, height) {
-        let newSvgCode = svgCode.replace(/<svg(.*?)>/, `<svg$1 width="${width}" height="${height}">`);
         const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(newSvgCode, 'image/svg+xml');
+        const svgDoc = parser.parseFromString(svgCode, 'image/svg+xml');
         const svgElement = svgDoc.querySelector('svg');
 
-        svgElement.querySelectorAll('*').forEach(el => {
-            if (el.getAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                el.setAttribute('fill', color);
-            }
-        });
-        
-        preview.innerHTML = svgElement.outerHTML;
+        if (svgElement && !svgDoc.querySelector('parsererror')) {
+            svgElement.setAttribute('width', width);
+            svgElement.setAttribute('height', height);
+
+            const elements = [svgElement, ...svgElement.querySelectorAll('*')];
+
+            elements.forEach(el => {
+                const currentFill = el.getAttribute('fill');
+                if (currentFill !== 'none') {
+                    el.setAttribute('fill', color);
+                }
+            });
+
+            preview.innerHTML = svgElement.outerHTML;
+        } else {
+            preview.innerHTML = '';
+        }
     }
 
     svgInput.addEventListener('input', convertSvgToXml);
@@ -157,7 +190,10 @@ import Layout from '../layouts/Layout.astro';
         document.execCommand('copy');
     });
 
-    convertSvgToXml();
+    // Initial conversion for any pasted code
+    if(svgInput.value){
+        convertSvgToXml();
+    }
 </script>
 
 <style>

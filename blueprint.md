@@ -21,14 +21,12 @@ This is a web-based tool that converts SVG (Scalable Vector Graphics) code into 
     *   A clean, modern interface with light and dark mode support.
     *   Uses CSS variables for theming.
 
-### Current Task: Fix SVG to Vector Drawable Conversion
+### Current Task: Handle SVG `viewBox` Offset
 
-The current implementation has a critical flaw: it only processes the first `<path>` element found in the SVG. This causes issues with any SVG that uses multiple paths, groups (`<g>`), or other shapes (`<rect>`, `<circle>`, etc.), resulting in an incomplete or invisible icon in Android.
+The current conversion logic does not handle SVGs where the `viewBox` attribute has a non-zero `x` or `y` offset (e.g., `viewBox="-10 -10 100 100"`). This results in an incorrect Vector Drawable where the icon is rendered off-canvas and is therefore invisible.
 
 **Plan:**
 
-1.  **Enhance SVG Parsing:** Modify the `convertSvgToXml` function in `src/pages/index.astro`.
-2.  **Handle Multiple Elements:** The script will be updated to iterate through all elements within the SVG, not just the first path.
-3.  **Support for Groups:** Add recursive processing for `<g>` (group) elements to handle nested shapes.
-4.  **Convert Basic Shapes:** Implement conversion logic to transform basic SVG shapes (`<rect>`, `<circle>`, `<polygon>`, etc.) into the `<path>` data format that Android's Vector Drawable requires.
-5.  **Generate Correct XML:** Construct the final XML with multiple `<path>` tags, preserving the structure and appearance of the original SVG.
+1.  **Parse Full `viewBox`:** Modify the `convertSvgToXml` function in `src/pages/index.astro` to parse all four values (`x`, `y`, `width`, `height`) from the `viewBox` attribute.
+2.  **Apply Translation:** If the `x` or `y` offset values are not zero, wrap the generated `<path>` elements in a `<group>` tag.
+3.  **Set Group Transforms:** Add `android:translateX` and `android:translateY` attributes to the `<group>`. The values will be the *negative* of the `viewBox`'s `x` and `y` values, respectively. This will shift the drawing canvas to match the original SVG's coordinate system, making the icon visible.
